@@ -689,6 +689,8 @@
             container.style.top = '0';
             container.style.left = '0';
             container.style.zIndex = '9999';
+            container.style.overflow = 'visible';
+            container.style.height = 'max-content';
 
             // Formatação do nome do arquivo
             const dataObj = new Date(dataInput + 'T12:00:00');
@@ -715,29 +717,25 @@
 
                 const imgData = canvasHTML.toDataURL('image/jpeg', 1.0);
                 
-                // 3. Inicializa jsPDF
+                // 3. Inicializa jsPDF criando uma ÚNICA PÁGINA com a altura exata do conteúdo
                 const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
                 
-                const pdfLargura = pdf.internal.pageSize.getWidth();
-                const pdfAltura = pdf.internal.pageSize.getHeight();
-                const imgAlturaCalculada = (canvasHTML.height * pdfLargura) / canvasHTML.width;
+                // Base de largura (210mm é a largura de um A4)
+                const pdfLargura = 210;
+                // Calcula a altura proporcional exata para não haver cortes
+                const proporcao = canvasHTML.width / canvasHTML.height;
+                const pdfAltura = pdfLargura / proporcao;
                 
-                // 4. Lógica de múltiplas páginas (Quebra o arquivo caso seja longo)
-                let alturaRestante = imgAlturaCalculada;
-                let posicaoY = 0;
+                // Gera o PDF com dimensões personalizadas (1 só página, do tamanho exato necessário)
+                const pdf = new jsPDF({
+                    orientation: 'p',
+                    unit: 'mm',
+                    format: [pdfLargura, pdfAltura]
+                });
                 
-                pdf.addImage(imgData, 'JPEG', 0, posicaoY, pdfLargura, imgAlturaCalculada);
-                alturaRestante -= pdfAltura;
+                pdf.addImage(imgData, 'JPEG', 0, 0, pdfLargura, pdfAltura);
 
-                while (alturaRestante > 0) {
-                    posicaoY = posicaoY - pdfAltura;
-                    pdf.addPage();
-                    pdf.addImage(imgData, 'JPEG', 0, posicaoY, pdfLargura, imgAlturaCalculada);
-                    alturaRestante -= pdfAltura;
-                }
-
-                // 5. Salva ou Partilha o documento
+                // 4. Salva ou Partilha o documento
                 if (acao === 'partilhar') {
                     // Transforma o PDF gerado num Ficheiro (File Blob) para envio nativo
                     const pdfBlob = pdf.output('blob');
