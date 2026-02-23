@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Apontamento de Mão de Obra - Grupo Bonella</title>
+    
+    <!-- Bibliotecas para Geração de PDF (html2canvas e jsPDF) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        /* --- VARIÁVEIS DE CORES OFICIAIS --- */
+        :root {
+            --verde-principal: #0F6A3B;
+            --verde-escuro: #084C2A;
+            --verde-claro: #2E8B57;
+            --amarelo-sol: #F4C430;
+            --branco: #FFFFFF;
+            --fundo-pagina: #f0f4f1;
+            --borda-suave: #d1d9d4;
+            --texto-escuro: #333333;
+        }
+
+        /* --- RESET BÁSICO --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--fundo-pagina);
+            color: var(--texto-escuro);
+            padding: 10px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- CONTAINER PRINCIPAL --- */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: var(--branco);
+            border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            padding: 20px;
+            position: relative;
+        }
+
+        /* --- CABEÇALHO E LOGO --- */
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid var(--verde-principal);
+        }
+
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .logo-svg {
+            width: 160px;
+            height: auto;
+        }
+
+        h1 {
+            color: var(--verde-escuro);
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin-top: 10px;
+        }
+
+        /* --- FORMULÁRIO GERAL --- */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--verde-escuro);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        input[type="text"], 
+        input[type="date"], 
+        input[type="time"], 
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--verde-principal);
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: #fafafa;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--amarelo-sol);
+            background-color: var(--branco);
+            box-shadow: 0 0 0 2px rgba(244, 196, 48, 0.2);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* --- SEÇÃO FUNCIONÁRIOS --- */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            background-color: var(--verde-principal);
+            padding: 10px 15px;
+            border-radius: 4px;
+            color: var(--branco);
+        }
+
+        .section-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        /* --- BOTÕES --- */
+        .btn {
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-add {
+            background-color: var(--amarelo-sol);
+            color: var(--verde-escuro);
+            font-size: 12px;
+            padding: 6px 12px;
+        }
+        .btn-add:hover { background-color: #e3b62b; }
+
+        .btn-excluir {
+            background-color: #dc3545;
+            color: white;
+            padding: 6px 10px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+        .btn-excluir:hover { background-color: #c82333; }
+
+        .btn-pdf {
+            width: 100%;
+            background-color: var(--verde-principal);
+            color: var(--branco);
+            font-size: 18px;
+            padding: 18px;
+            margin-top: 30px;
+            border-radius: 6px;
+            box-shadow: 0 4px 10px rgba(15, 106, 59, 0.3);
+        }
+        .btn-pdf:hover { background-color: var(--verde-escuro); }
+
+        /* --- TABELA DE FUNCIONÁRIOS --- */
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid var(--verde-principal);
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 550px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--borda-suave);
+            font-size: 13px;
+        }
+
+        th {
+            background-color: var(--verde-escuro);
+            color: var(--branco);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) { background-color: #f8faf9; }
+        
+        /* Estilização do Select de Status e Input Anotação */
+        .select-status {
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            background-color: var(--branco);
+            cursor: pointer;
+            outline: none;
+        }
+        .select-status.presente { color: var(--verde-principal); }
+        .select-status.falta { color: #dc3545; }
+        
+        .input-anotacao {
+            width: 100%;
+            min-width: 120px;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 12px;
+            background-color: var(--branco);
+        }
+        .input-anotacao:focus {
+            border-color: var(--verde-principal);
+            outline: none;
+        }
+
+        .td-center { text-align: center; }
+
+        /* --- ASSINATURA DIGITAL --- */
+        .signature-area {
+            border: 2px dashed var(--verde-principal);
+            border-radius: 6px;
+            background-color: var(--branco);
+            position: relative;
+            margin-top: 5px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 120px;
+            display: block;
+            touch-action: none; /* Previne rolagem ao assinar no celular */
+            cursor: crosshair;
+        }
+
+        .btn-limpar {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #f1f1f1;
+            color: #555;
+            border: 1px solid #ccc;
+            padding: 4px 8px;
+            font-size: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        /* --- MODAL ADICIONAR FUNCIONÁRIO --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0,0,0,0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--branco);
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 350px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .modal-content h3 {
+            color: var(--verde-escuro);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .modal-acoes {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            gap: 10px;
+        }
+
+        .btn-salvar-modal { background-color: var(--verde-principal); color: white; padding: 10px; flex: 1;}
+        .btn-cancelar-modal { background-color: #ccc; color: #333; padding: 10px; flex: 1;}
+
+        /* --- MODO IMPRESSÃO / EXPORTAÇÃO PDF --- */
+        .modo-pdf .no-print { display: none !important; }
+        .modo-pdf .container {
+            box-shadow: none;
+            padding: 10px;
+            margin: 0;
+            width: 100%;
+            max-width: none;
+        }
+        .modo-pdf input, .modo-pdf textarea, .modo-pdf select {
+            border: 1px solid #ddd;
+            background-color: transparent;
+            color: #000;
+        }
+        .modo-pdf select {
+            appearance: none;
+            -webkit-appearance: none;
+            border: none !important;
+        }
+        .modo-pdf .select-status.falta { color: #dc3545; }
+        .modo-pdf .select-status.presente { color: var(--verde-principal); }
+        .modo-pdf .signature-area { border: 1px solid var(--verde-principal); }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="documento-pdf">
+        
+        <!-- CABEÇALHO -->
+        <div class="header">
+            <div class="logo-container">
+                <!-- Logo Grupo Bonella recriada em SVG para funcionar Offline e escalar perfeitamente no PDF -->
+                <svg class="logo-svg" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg">
+                    <g transform="translate(10, 10)">
+                        <!-- Arcos Coloridos Superiores -->
+                        <path d="M 40 70 A 50 50 0 0 1 140 70" fill="none" stroke="#2E8B57" stroke-width="4" stroke-dasharray="6 6" stroke-linecap="round"/>
+                        <path d="M 50 70 A 40 40 0 0 1 130 70" fill="none" stroke="#E63946" stroke-width="4" stroke-dasharray="5 5" stroke-linecap="round"/>
+                        <path d="M 60 70 A 30 30 0 0 1 120 70" fill="none" stroke="#1D3557" stroke-width="3" stroke-dasharray="4 4" stroke-linecap="round"/>
+                        <path d="M 70 70 A 20 20 0 0 1 110 70" fill="none" stroke="#F4C430" stroke-width="3" stroke-dasharray="2 4" stroke-linecap="round"/>
+                        
+                        <!-- Sol -->
+                        <path d="M 75 70 A 15 15 0 0 1 105 70 Z" fill="#F4C430" />
+                        
+                        <!-- Colinas/Campos (Linhas Verdes) -->
+                        <!-- Colina Esquerda -->
+                        <path d="M 30 70 Q 55 55 90 70 T 150 70 L 150 90 L 30 90 Z" fill="#FFFFFF" />
+                        <path d="M 30 70 Q 55 55 90 70" fill="none" stroke="#0F6A3B" stroke-width="2.5"/>
+                        <path d="M 35 76 Q 60 62 90 76" fill="none" stroke="#0F6A3B" stroke-width="2.5"/>
+                        <path d="M 40 82 Q 65 69 90 82" fill="none" stroke="#0F6A3B" stroke-width="2.5"/>
+                        
+                        <!-- Colina Direita -->
+                        <path d="M 90 70 Q 120 50 150 70" fill="none" stroke="#0F6A3B" stroke-width="2.5"/>
+                        <path d="M 90 76 Q 120 58 150 76" fill="none" stroke="#0F6A3B" stroke-width="2.5"/>
+                        <path d="M 90 82 Q 120 66 150 82" fill="none" stroke="#0F6A3B" stroke-width="2.5"/>
+
+                        <!-- Textos da Logo -->
+                        <text x="90" y="105" font-family="'Segoe UI', sans-serif" font-weight="600" font-size="10" fill="#084C2A" text-anchor="middle" letter-spacing="4">GRUPO</text>
+                        <!-- Simulação de fonte cursiva moderna para "bonella" -->
+                        <text x="90" y="128" font-family="'Georgia', serif" font-weight="bold" font-style="italic" font-size="28" fill="#0F6A3B" text-anchor="middle" letter-spacing="-0.5">bonella</text>
+                        <text x="148" y="112" font-family="Arial" font-size="8" fill="#0F6A3B">®</text>
+                    </g>
+                </svg>
+            </div>
+            <h1>APONTAMENTO DE MÃO DE OBRA</h1>
+        </div>
+
+        <!-- DADOS INICIAIS -->
+        <div class="form-grid">
+            <div class="input-group">
+                <label>Fazenda:</label>
+                <input type="text" id="fazenda" placeholder="Nome da Fazenda">
+            </div>
+            <div class="input-group">
+                <label>Atividade:</label>
+                <input type="text" id="atividade" placeholder="Ex: Capina, Colheita">
+            </div>
+            <div class="input-group">
+                <label>Talhão:</label>
+                <input type="text" id="talhao" placeholder="Número/Nome">
+            </div>
+            <div class="input-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label>Data:</label>
+                    <input type="date" id="data">
+                </div>
+                <div>
+                    <label>H. Inicial:</label>
+                    <input type="time" id="hinicial">
+                </div>
+            </div>
+        </div>
+
+        <!-- LISTA DE FUNCIONÁRIOS -->
+        <div class="section-header">
+            <h2>Quadro de Funcionários</h2>
+            <div class="no-print" style="display: flex; gap: 10px;">
+                <button class="btn btn-add" onclick="abrirModal()">+ Novo</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="td-center">STATUS</th>
+                        <th>MATRÍCULA</th>
+                        <th>NOME</th>
+                        <th>ANOTAÇÃO</th>
+                        <th class="td-center no-print">AÇÃO</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-corpo">
+                    <!-- Preenchido via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- DADOS FINAIS -->
+        <div class="form-grid">
+            <div class="input-group">
+                <label>Turma:</label>
+                <input type="text" id="turma" value="TURMA HENRIQUE" placeholder="Nome da Turma">
+            </div>
+            <div class="input-group">
+                <label>Líder:</label>
+                <input type="text" id="lider" placeholder="Nome do Líder da Turma">
+            </div>
+            <div class="input-group">
+                <label>H. Final:</label>
+                <input type="time" id="hfinal">
+            </div>
+        </div>
+
+        <!-- ASSINATURA DIGITAL -->
+        <div class="input-group" style="margin-top: 15px;">
+            <label>Assinatura do Líder:</label>
+            <div class="signature-area">
+                <button class="btn-limpar no-print" onclick="limparAssinatura()">Limpar</button>
+                <canvas id="canvas-assinatura"></canvas>
+            </div>
+        </div>
+
+        <!-- OBSERVAÇÕES -->
+        <div class="input-group" style="margin-top: 20px;">
+            <label>Observações (OBS):</label>
+            <textarea id="obs" placeholder="Registre ocorrências, observações do dia..."></textarea>
+        </div>
+
+        <!-- BOTÃO GERAR PDF -->
+        <button class="btn btn-pdf no-print" onclick="gerarPDF()">GERAR PDF INSTITUCIONAL</button>
+
+        <!-- CRÉDITOS -->
+        <div style="text-align: center; margin-top: 20px; font-size: 10px; color: #999; font-style: italic;">
+            Desenvolvido por Caroline Medeiros
+        </div>
+
+    </div>
+
+    <!-- MODAL ADICIONAR FUNCIONÁRIO -->
+    <div class="modal-overlay" id="modal-funcionario">
+        <div class="modal-content">
+            <h3>Adicionar Funcionário</h3>
+            <div class="input-group" style="margin-bottom: 10px;">
+                <label>Matrícula:</label>
+                <input type="text" id="mod-mat" placeholder="Ex: 10600099">
+            </div>
+            <div class="input-group" style="margin-bottom: 10px;">
+                <label>Nome Completo:</label>
+                <input type="text" id="mod-nome" placeholder="Nome do Funcionário">
+            </div>
+            <div class="modal-acoes">
+                <button class="btn btn-cancelar-modal" onclick="fecharModal()">Cancelar</button>
+                <button class="btn btn-salvar-modal" onclick="salvarFuncionario()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* =========================================
+           1. GERENCIAMENTO DE DADOS E TABELA
+        ========================================= */
+        const funcionariosPadrao = [
+            { matricula: '10600083', nome: 'FELIPE VITOR SALVIANO' },
+            { matricula: '10600084', nome: 'WILLIAM VITOR SALVIANO' },
+            { matricula: '10600087', nome: 'RODRIGO LEMES PROCOIO GABRIEL' },
+            { matricula: '10600090', nome: 'LUAN LUCA PEREIRA SANTOS' },
+            { matricula: '10600091', nome: 'ELLEN CRISTINE GERVASIO' },
+            { matricula: '10600092', nome: 'EMILLY CRISTINE EUFRAZIO' },
+            { matricula: '10600093', nome: 'LUIS CLAUDIO CAMILO' },
+            { matricula: '10600094', nome: 'DEIVIDI DOUGLAS FRANCISCO' }
+        ];
+
+        let listaFuncionarios = [];
+
+        // Inicialização: Tenta carregar do LocalStorage ou usa padrão
+        function inicializar() {
+            // Mudei o nome da chave para forçar o reset e mostrar os funcionários originais imediatamente
+            const salvos = localStorage.getItem('bonella_lista_func_v3');
+            
+            if (salvos) {
+                listaFuncionarios = JSON.parse(salvos);
+                // Se a lista guardada estiver vazia, recarrega a original
+                if (listaFuncionarios.length === 0) {
+                    listaFuncionarios = [...funcionariosPadrao];
+                    salvarNoLocalStorage();
+                }
+            } else {
+                listaFuncionarios = [...funcionariosPadrao];
+                salvarNoLocalStorage();
+            }
+            
+            // Seta data de hoje automaticamente
+            document.getElementById('data').valueAsDate = new Date();
+            
+            renderizarTabela();
+            redimensionarCanvas();
+        }
+
+        function salvarNoLocalStorage() {
+            localStorage.setItem('bonella_lista_func_v3', JSON.stringify(listaFuncionarios));
+        }
+
+        function renderizarTabela() {
+            const tbody = document.getElementById('tabela-corpo');
+            tbody.innerHTML = '';
+
+            listaFuncionarios.forEach((func, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="td-center">
+                        <select class="select-status presente" onchange="atualizarCorStatus(this)">
+                            <option value="PRESENTE">PRESENTE</option>
+                            <option value="FALTA">FALTA</option>
+                        </select>
+                    </td>
+                    <td>${func.matricula}</td>
+                    <td>${func.nome}</td>
+                    <td>
+                        <input type="text" class="input-anotacao" placeholder="Obs / Tarefa...">
+                    </td>
+                    <td class="td-center no-print">
+                        <button class="btn btn-excluir" onclick="excluirFuncionario(${index})">X</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function atualizarCorStatus(select) {
+            if (select.value === 'FALTA') {
+                select.classList.remove('presente');
+                select.classList.add('falta');
+            } else {
+                select.classList.remove('falta');
+                select.classList.add('presente');
+            }
+        }
+
+        function excluirFuncionario(index) {
+            if(confirm('Tem certeza que deseja remover este funcionário da lista?')) {
+                listaFuncionarios.splice(index, 1);
+                salvarNoLocalStorage();
+                renderizarTabela();
+            }
+        }
+
+        /* =========================================
+           2. MODAL NOVO FUNCIONÁRIO
+        ========================================= */
+        const modal = document.getElementById('modal-funcionario');
+        
+        function abrirModal() { modal.style.display = 'flex'; }
+        
+        function fecharModal() { 
+            modal.style.display = 'none'; 
+            document.getElementById('mod-mat').value = '';
+            document.getElementById('mod-nome').value = '';
+        }
+
+        function salvarFuncionario() {
+            const matricula = document.getElementById('mod-mat').value.trim();
+            const nome = document.getElementById('mod-nome').value.trim().toUpperCase();
+
+            if(!matricula || !nome) {
+                alert("Por favor, preencha a Matrícula e o Nome.");
+                return;
+            }
+
+            listaFuncionarios.push({ matricula, nome });
+            salvarNoLocalStorage();
+            renderizarTabela();
+            fecharModal();
+        }
+
+        /* =========================================
+           3. ASSINATURA DIGITAL (CANVAS)
+        ========================================= */
+        const canvas = document.getElementById('canvas-assinatura');
+        const ctx = canvas.getContext('2d');
+        let desenhando = false;
+
+        function redimensionarCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = 120;
+            // Configurações da caneta
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#084C2A'; // Verde escuro para assinatura
+        }
+        window.addEventListener('resize', redimensionarCanvas);
+
+        function getPosicao(e) {
+            const rect = canvas.getBoundingClientRect();
+            if (e.touches && e.touches.length > 0) {
+                return {
+                    x: e.touches[0].clientX - rect.left,
+                    y: e.touches[0].clientY - rect.top
+                };
+            }
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+
+        function iniciarTraco(e) {
+            desenhando = true;
+            const pos = getPosicao(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            e.preventDefault();
+        }
+
+        function tragar(e) {
+            if (!desenhando) return;
+            const pos = getPosicao(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            e.preventDefault();
+        }
+
+        function pararTraco() { desenhando = false; }
+        
+        function limparAssinatura() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+
+        // Eventos Mouse
+        canvas.addEventListener('mousedown', iniciarTraco);
+        canvas.addEventListener('mousemove', tragar);
+        canvas.addEventListener('mouseup', pararTraco);
+        canvas.addEventListener('mouseout', pararTraco);
+
+        // Eventos Touch (Celular)
+        canvas.addEventListener('touchstart', iniciarTraco, { passive: false });
+        canvas.addEventListener('touchmove', tragar, { passive: false });
+        canvas.addEventListener('touchend', pararTraco);
+
+        /* =========================================
+           4. GERAÇÃO DE PDF INSTITUCIONAL
+        ========================================= */
+        async function gerarPDF() {
+            const dataInput = document.getElementById('data').value;
+            if(!dataInput) {
+                alert("A data é obrigatória para gerar o PDF.");
+                return;
+            }
+
+            const container = document.getElementById('documento-pdf');
+            
+            // 1. Prepara Layout para PDF (Esconde itens não impressos via CSS)
+            container.classList.add('modo-pdf');
+
+            // Formatação do nome do arquivo
+            const dataObj = new Date(dataInput + 'T12:00:00'); // Evita bug de fuso horário
+            const dia = String(dataObj.getDate()).padStart(2, '0');
+            const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+            const ano = dataObj.getFullYear();
+            const nomeArquivo = `apontamento-mao-de-obra-${dia}-${mes}-${ano}.pdf`;
+
+            try {
+                // 2. Captura a imagem preservando as cores da identidade visual
+                const canvasHTML = await html2canvas(container, {
+                    scale: 2, // Alta qualidade
+                    useCORS: true,
+                    backgroundColor: '#FFFFFF'
+                });
+
+                const imgData = canvasHTML.toDataURL('image/jpeg', 1.0);
+                
+                // 3. Inicializa jsPDF (Formato A4, Retrato)
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                
+                const pdfLargura = pdf.internal.pageSize.getWidth();
+                const pdfAltura = (canvasHTML.height * pdfLargura) / canvasHTML.width;
+                
+                // 4. Adiciona imagem no PDF e salva
+                pdf.addImage(imgData, 'JPEG', 0, 0, pdfLargura, pdfAltura);
+                pdf.save(nomeArquivo);
+
+            } catch (erro) {
+                console.error("Erro na geração do PDF: ", erro);
+                alert("Ocorreu um erro ao gerar o PDF. Verifique se o navegador possui permissões adequadas.");
+            } finally {
+                // 5. Retorna o layout ao modo normal de edição
+                container.classList.remove('modo-pdf');
+            }
+        }
+
+        // Executa ao carregar a página
+        window.onload = inicializar;
+
+    </script>
+</body>
+</html>
